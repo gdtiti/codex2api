@@ -3,7 +3,7 @@ services:
     build: .
     container_name: codex2api
     ports:
-      - "${CODEX_PORT:-8080}:8080"
+      - "${CODEX_PORT:-8080}:${CODEX_PORT:-8080}"
     env_file:
       - .env
     depends_on:
