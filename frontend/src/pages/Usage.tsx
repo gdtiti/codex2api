@@ -31,11 +31,17 @@ function formatTokens(value?: number | null): string {
 
 function formatTime(iso: string): string {
   try {
-    const d = new Date(iso)
+    // 后端如果直接按本地时间存入无时区 DB 字段，再序列化时会被默认当成 UTC 并加上 Z。
+    // 这会导致浏览器根据本地时区再次 +8 小时。
+    // 我们强制去掉时区后缀，让浏览器把这个字符串直接当作本地时间进行处理
+    const normalizedIso = iso.replace(/(Z|[+-]\d{2}(:\d{2})?)$/, '')
+    const d = new Date(normalizedIso)
+    
     if (isNaN(d.getTime())) return '-'
     const now = new Date()
     const pad = (n: number) => String(n).padStart(2, '0')
     const time = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+    
     // 如果不是今天则加上日期
     if (d.toDateString() !== now.toDateString()) {
       return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${time}`
