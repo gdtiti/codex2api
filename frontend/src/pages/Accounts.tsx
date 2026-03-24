@@ -109,7 +109,6 @@ export default function Accounts() {
               <thead>
                 <tr>
                   <th>ID</th>
-                  <th>名称</th>
                   <th>邮箱</th>
                   <th>套餐</th>
                   <th>状态</th>
@@ -121,7 +120,6 @@ export default function Accounts() {
                 {accounts.map((account) => (
                   <tr key={account.id}>
                     <td className="text-mono text-muted">{account.id}</td>
-                    <td style={{ fontWeight: 500 }}>{account.name || '-'}</td>
                     <td className="text-secondary">{account.email || '-'}</td>
                     <td><span className="text-mono">{account.plan_type || '-'}</span></td>
                     <td><StatusBadge status={account.status} /></td>
