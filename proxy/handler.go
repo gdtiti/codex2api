@@ -387,7 +387,7 @@ func (h *Handler) ChatCompletions(c *gin.Context) {
 
 	model := gjson.GetBytes(rawBody, "model").String()
 	if model == "" {
-		model = "gpt-4.1"
+		model = "gpt-5.4"
 	}
 	isStream := gjson.GetBytes(rawBody, "stream").Bool()
 	reasoningEffort := extractReasoningEffort(rawBody)
@@ -724,15 +724,18 @@ func (h *Handler) handleUpstreamError(c *gin.Context, account *auth.Account, sta
 // ListModels 列出可用模型
 func (h *Handler) ListModels(c *gin.Context) {
 	models := []gin.H{
-		{"id": "gpt-4.1", "object": "model", "owned_by": "openai"},
-		{"id": "gpt-4.1-mini", "object": "model", "owned_by": "openai"},
-		{"id": "gpt-4.1-nano", "object": "model", "owned_by": "openai"},
-		{"id": "o4-mini", "object": "model", "owned_by": "openai"},
-		{"id": "o3", "object": "model", "owned_by": "openai"},
-		{"id": "o3-mini", "object": "model", "owned_by": "openai"},
-		{"id": "codex-mini-latest", "object": "model", "owned_by": "openai"},
-		{"id": "claude-sonnet-4-20250514", "object": "model", "owned_by": "anthropic"},
-		{"id": "gemini-2.5-pro", "object": "model", "owned_by": "google"},
+		{"id": "gpt-5.4", "object": "model", "owned_by": "openai"},
+		{"id": "gpt-5.4-mini", "object": "model", "owned_by": "openai"},
+		{"id": "gpt-5", "object": "model", "owned_by": "openai"},
+		{"id": "gpt-5-codex", "object": "model", "owned_by": "openai"},
+		{"id": "gpt-5-codex-mini", "object": "model", "owned_by": "openai"},
+		{"id": "gpt-5.1", "object": "model", "owned_by": "openai"},
+		{"id": "gpt-5.1-codex", "object": "model", "owned_by": "openai"},
+		{"id": "gpt-5.1-codex-mini", "object": "model", "owned_by": "openai"},
+		{"id": "gpt-5.1-codex-max", "object": "model", "owned_by": "openai"},
+		{"id": "gpt-5.2", "object": "model", "owned_by": "openai"},
+		{"id": "gpt-5.2-codex", "object": "model", "owned_by": "openai"},
+		{"id": "gpt-5.3-codex", "object": "model", "owned_by": "openai"},
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"object": "list",

@@ -92,6 +92,11 @@ func main() {
 		r.StaticFS("/admin", http.FS(subFS))
 	}
 
+	// 根路径重定向到管理后台
+	r.GET("/", func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, "/admin/")
+	})
+
 	// 健康检查
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
