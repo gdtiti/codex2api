@@ -602,6 +602,7 @@ function TestConnectionModal({
   useEffect(() => {
     const controller = new AbortController()
     abortRef.current = controller
+    let cancelled = false
 
     const run = async () => {
       try {
@@ -698,9 +699,15 @@ function TestConnectionModal({
       }
     }
 
-    void run()
+    const timer = window.setTimeout(() => {
+      if (!cancelled) {
+        void run()
+      }
+    }, 0)
 
     return () => {
+      cancelled = true
+      window.clearTimeout(timer)
       controller.abort()
     }
   }, [account.id, markSettled])
