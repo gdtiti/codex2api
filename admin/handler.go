@@ -20,12 +20,14 @@ import (
 
 // Handler 管理后台 API 处理器
 type Handler struct {
-	store       *auth.Store
-	cache       *cache.TokenCache
-	db          *database.DB
-	rateLimiter *proxy.RateLimiter
-	cpuSampler  *cpuSampler
-	startedAt   time.Time
+	store         *auth.Store
+	cache         *cache.TokenCache
+	db            *database.DB
+	rateLimiter   *proxy.RateLimiter
+	cpuSampler    *cpuSampler
+	startedAt     time.Time
+	pgMaxConns    int
+	redisPoolSize int
 }
 
 // NewHandler 创建管理后台处理器
@@ -38,6 +40,12 @@ func NewHandler(store *auth.Store, db *database.DB, tc *cache.TokenCache, rl *pr
 		cpuSampler:  newCPUSampler(),
 		startedAt:   time.Now(),
 	}
+}
+
+// SetPoolSizes 设置连接池大小跟踪值（由 main.go 在启动时调用）
+func (h *Handler) SetPoolSizes(pgMaxConns, redisPoolSize int) {
+	h.pgMaxConns = pgMaxConns
+	h.redisPoolSize = redisPoolSize
 }
 
 // RegisterRoutes 注册管理 API 路由
@@ -450,6 +458,8 @@ type settingsResponse struct {
 	TestModel       string `json:"test_model"`
 	TestConcurrency int    `json:"test_concurrency"`
 	ProxyURL        string `json:"proxy_url"`
+	PgMaxConns      int    `json:"pg_max_conns"`
+	RedisPoolSize   int    `json:"redis_pool_size"`
 }
 
 type updateSettingsReq struct {
@@ -458,6 +468,8 @@ type updateSettingsReq struct {
 	TestModel       *string `json:"test_model"`
 	TestConcurrency *int    `json:"test_concurrency"`
 	ProxyURL        *string `json:"proxy_url"`
+	PgMaxConns      *int    `json:"pg_max_conns"`
+	RedisPoolSize   *int    `json:"redis_pool_size"`
 }
 
 // GetSettings 获取当前系统设置
@@ -468,6 +480,8 @@ func (h *Handler) GetSettings(c *gin.Context) {
 		TestModel:       h.store.GetTestModel(),
 		TestConcurrency: h.store.GetTestConcurrency(),
 		ProxyURL:        h.store.GetProxyURL(),
+		PgMaxConns:      h.pgMaxConns,
+		RedisPoolSize:   h.redisPoolSize,
 	})
 }
 
@@ -522,6 +536,32 @@ func (h *Handler) UpdateSettings(c *gin.Context) {
 		log.Printf("设置已更新: proxy_url = %s", *req.ProxyURL)
 	}
 
+	if req.PgMaxConns != nil {
+		v := *req.PgMaxConns
+		if v < 5 {
+			v = 5
+		}
+		if v > 500 {
+			v = 500
+		}
+		h.db.SetMaxOpenConns(v)
+		h.pgMaxConns = v
+		log.Printf("设置已更新: pg_max_conns = %d", v)
+	}
+
+	if req.RedisPoolSize != nil {
+		v := *req.RedisPoolSize
+		if v < 5 {
+			v = 5
+		}
+		if v > 500 {
+			v = 500
+		}
+		h.cache.SetPoolSize(v)
+		h.redisPoolSize = v
+		log.Printf("设置已更新: redis_pool_size = %d", v)
+	}
+
 	// 持久化保存到数据库
 	err := h.db.UpdateSystemSettings(c.Request.Context(), &database.SystemSettings{
 		MaxConcurrency:  h.store.GetMaxConcurrency(),
@@ -529,6 +569,8 @@ func (h *Handler) UpdateSettings(c *gin.Context) {
 		TestModel:       h.store.GetTestModel(),
 		TestConcurrency: h.store.GetTestConcurrency(),
 		ProxyURL:        h.store.GetProxyURL(),
+		PgMaxConns:      h.pgMaxConns,
+		RedisPoolSize:   h.redisPoolSize,
 	})
 	if err != nil {
 		log.Printf("无法持久化保存设置: %v", err)
@@ -540,6 +582,8 @@ func (h *Handler) UpdateSettings(c *gin.Context) {
 		TestModel:       h.store.GetTestModel(),
 		TestConcurrency: h.store.GetTestConcurrency(),
 		ProxyURL:        h.store.GetProxyURL(),
+		PgMaxConns:      h.pgMaxConns,
+		RedisPoolSize:   h.redisPoolSize,
 	})
 }
 

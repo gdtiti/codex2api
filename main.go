@@ -65,13 +65,22 @@ func main() {
 			TestModel:       "gpt-5.4",
 			TestConcurrency: 50,
 			ProxyURL:        "",
+			PgMaxConns:      50,
+			RedisPoolSize:   30,
 		}
 		_ = db.UpdateSystemSettings(context.Background(), settings)
 	} else if err != nil {
 		log.Printf("警告: 读取系统设置失败: %v，将采用安全后备策略", err)
-		settings = &database.SystemSettings{MaxConcurrency: 2, GlobalRPM: 0, TestModel: "gpt-5.4", TestConcurrency: 50}
+		settings = &database.SystemSettings{MaxConcurrency: 2, GlobalRPM: 0, TestModel: "gpt-5.4", TestConcurrency: 50, PgMaxConns: 50, RedisPoolSize: 30}
 	} else {
-		log.Printf("已加载持久化业务设置: ProxyURL=%s, MaxConcurrency=%d, GlobalRPM=%d", settings.ProxyURL, settings.MaxConcurrency, settings.GlobalRPM)
+		log.Printf("已加载持久化业务设置: ProxyURL=%s, MaxConcurrency=%d, GlobalRPM=%d, PgMaxConns=%d, RedisPoolSize=%d",
+			settings.ProxyURL, settings.MaxConcurrency, settings.GlobalRPM, settings.PgMaxConns, settings.RedisPoolSize)
+	}
+
+	// 4b. 应用连接池设置
+	if settings.PgMaxConns > 0 {
+		db.SetMaxOpenConns(settings.PgMaxConns)
+		log.Printf("PostgreSQL 连接池: max_conns=%d", settings.PgMaxConns)
 	}
 
 	// 5. 初始化账号管理器
@@ -87,6 +96,8 @@ func main() {
 	// 全局 RPM 限流器
 	rateLimiter := proxy.NewRateLimiter(settings.GlobalRPM)
 	adminHandler := admin.NewHandler(store, db, tc, rateLimiter)
+	// 初始化 admin handler 的连接池设置跟踪
+	adminHandler.SetPoolSizes(settings.PgMaxConns, settings.RedisPoolSize)
 	store.SetUsageProbeFunc(adminHandler.ProbeUsageSnapshot)
 
 	// 启动后台刷新

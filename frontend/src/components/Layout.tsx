@@ -69,14 +69,19 @@ export default function Layout({ children }: PropsWithChildren) {
 
             {/* Footer */}
             <div className="mt-auto">
-              <div className="p-4 rounded-3xl border border-primary/14 bg-gradient-to-b from-white/88 to-[hsl(258,30%,95%)]/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]">
-                <span className="inline-flex items-center justify-center min-h-[28px] px-2.5 rounded-full text-[12px] font-bold bg-[hsl(var(--success-bg))] text-[hsl(var(--success))]">
-                  在线
-                </span>
-                <strong className="block mt-3.5 text-lg">OpenAI 兼容代理</strong>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  在一个工作台里查看账号、流量与系统健康度，不再在页面间来回切换。
-                </p>
+              <div className="rounded-2xl border border-border bg-white/62 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] backdrop-blur-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-[13px] font-semibold text-foreground">代理服务</div>
+                    <p className="mt-1 text-[12px] leading-5 text-muted-foreground">
+                      账号、流量、健康度统一查看
+                    </p>
+                  </div>
+                  <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[hsl(var(--success-bg))] px-2.5 py-1 text-[11px] font-bold text-[hsl(var(--success))]">
+                    <span className="size-2 rounded-full bg-emerald-500" />
+                    在线
+                  </span>
+                </div>
               </div>
             </div>
           </div>

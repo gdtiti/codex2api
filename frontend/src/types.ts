@@ -114,6 +114,9 @@ export interface SystemSettings {
   global_rpm: number
   test_model: string
   test_concurrency: number
+  proxy_url?: string
+  pg_max_conns: number
+  redis_pool_size: number
 }
 
 export interface UsageStats {

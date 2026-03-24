@@ -146,6 +146,12 @@ func (db *DB) Close() error {
 	return db.conn.Close()
 }
 
+// SetMaxOpenConns 运行时调整最大连接数（管理后台调用）
+func (db *DB) SetMaxOpenConns(n int) {
+	db.conn.SetMaxOpenConns(n)
+	db.conn.SetMaxIdleConns(n / 2)
+}
+
 // migrate 自动建表
 func (db *DB) migrate(ctx context.Context) error {
 	query := `
@@ -212,8 +218,12 @@ func (db *DB) migrate(ctx context.Context) error {
 		global_rpm         INT DEFAULT 0,
 		test_model         VARCHAR(100) DEFAULT 'gpt-5.4',
 		test_concurrency   INT DEFAULT 50,
-		proxy_url          VARCHAR(500) DEFAULT ''
+		proxy_url          VARCHAR(500) DEFAULT '',
+		pg_max_conns       INT DEFAULT 50,
+		redis_pool_size    INT DEFAULT 30
 	);
+	ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS pg_max_conns INT DEFAULT 50;
+	ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS redis_pool_size INT DEFAULT 30;
 	`
 	_, err := db.conn.ExecContext(ctx, query)
 	return err
@@ -265,15 +275,17 @@ type SystemSettings struct {
 	TestModel       string
 	TestConcurrency int
 	ProxyURL        string
+	PgMaxConns      int
+	RedisPoolSize   int
 }
 
 // GetSystemSettings 加载全局设置
 func (db *DB) GetSystemSettings(ctx context.Context) (*SystemSettings, error) {
 	s := &SystemSettings{}
 	err := db.conn.QueryRowContext(ctx, `
-		SELECT max_concurrency, global_rpm, test_model, test_concurrency, proxy_url
+		SELECT max_concurrency, global_rpm, test_model, test_concurrency, proxy_url, pg_max_conns, redis_pool_size
 		FROM system_settings WHERE id = 1
-	`).Scan(&s.MaxConcurrency, &s.GlobalRPM, &s.TestModel, &s.TestConcurrency, &s.ProxyURL)
+	`).Scan(&s.MaxConcurrency, &s.GlobalRPM, &s.TestModel, &s.TestConcurrency, &s.ProxyURL, &s.PgMaxConns, &s.RedisPoolSize)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -283,15 +295,17 @@ func (db *DB) GetSystemSettings(ctx context.Context) (*SystemSettings, error) {
 // UpdateSystemSettings 更新全局设置（upsert：无行时自动插入）
 func (db *DB) UpdateSystemSettings(ctx context.Context, s *SystemSettings) error {
 	_, err := db.conn.ExecContext(ctx, `
-		INSERT INTO system_settings (id, max_concurrency, global_rpm, test_model, test_concurrency, proxy_url)
-		VALUES (1, $1, $2, $3, $4, $5)
+		INSERT INTO system_settings (id, max_concurrency, global_rpm, test_model, test_concurrency, proxy_url, pg_max_conns, redis_pool_size)
+		VALUES (1, $1, $2, $3, $4, $5, $6, $7)
 		ON CONFLICT (id) DO UPDATE SET
 			max_concurrency  = EXCLUDED.max_concurrency,
 			global_rpm       = EXCLUDED.global_rpm,
 			test_model       = EXCLUDED.test_model,
 			test_concurrency = EXCLUDED.test_concurrency,
-			proxy_url        = EXCLUDED.proxy_url
-	`, s.MaxConcurrency, s.GlobalRPM, s.TestModel, s.TestConcurrency, s.ProxyURL)
+			proxy_url        = EXCLUDED.proxy_url,
+			pg_max_conns     = EXCLUDED.pg_max_conns,
+			redis_pool_size  = EXCLUDED.redis_pool_size
+	`, s.MaxConcurrency, s.GlobalRPM, s.TestModel, s.TestConcurrency, s.ProxyURL, s.PgMaxConns, s.RedisPoolSize)
 	return err
 }
 

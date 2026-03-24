@@ -33,7 +33,7 @@ export default function Settings() {
   const [newKeyName, setNewKeyName] = useState('')
   const [newKeyValue, setNewKeyValue] = useState('')
   const [createdKey, setCreatedKey] = useState<string | null>(null)
-  const [settingsForm, setSettingsForm] = useState<SystemSettings>({ max_concurrency: 2, global_rpm: 0, test_model: '', test_concurrency: 50 })
+  const [settingsForm, setSettingsForm] = useState<SystemSettings>({ max_concurrency: 2, global_rpm: 0, test_model: '', test_concurrency: 50, pg_max_conns: 50, redis_pool_size: 30 })
   const [savingSettings, setSavingSettings] = useState(false)
   const [modelList, setModelList] = useState<string[]>([])
   const { toast, showToast } = useToast()
@@ -298,6 +298,31 @@ export default function Settings() {
                   onChange={(e: ChangeEvent<HTMLInputElement>) => setSettingsForm(f => ({ ...f, test_concurrency: parseInt(e.target.value) || 1 }))}
                 />
                 <p className="text-xs text-muted-foreground mt-1">批量测试连接时的并发数（范围 1~200）</p>
+              </div>
+            </div>
+            <h3 className="text-base font-semibold text-foreground mb-4 mt-6">连接池配置</h3>
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4 mb-4">
+              <div>
+                <label className="block mb-2 text-sm font-semibold text-muted-foreground">PostgreSQL 最大连接数</label>
+                <Input
+                  type="number"
+                  min={5}
+                  max={500}
+                  value={settingsForm.pg_max_conns}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setSettingsForm(f => ({ ...f, pg_max_conns: parseInt(e.target.value) || 50 }))}
+                />
+                <p className="text-xs text-muted-foreground mt-1">数据库最大连接数（范围 5~500，实时生效）</p>
+              </div>
+              <div>
+                <label className="block mb-2 text-sm font-semibold text-muted-foreground">Redis 连接池大小</label>
+                <Input
+                  type="number"
+                  min={5}
+                  max={500}
+                  value={settingsForm.redis_pool_size}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setSettingsForm(f => ({ ...f, redis_pool_size: parseInt(e.target.value) || 30 }))}
+                />
+                <p className="text-xs text-muted-foreground mt-1">Redis 连接池大小（范围 5~500，重启后生效）</p>
               </div>
             </div>
             <Button onClick={() => void handleSaveSettings()} disabled={savingSettings}>

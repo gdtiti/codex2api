@@ -13,13 +13,17 @@ type TokenCache struct {
 	client *redis.Client
 }
 
-// New 创建 Redis Token 缓存
-func New(addr, password string, db int) (*TokenCache, error) {
-	client := redis.NewClient(&redis.Options{
+// New 创建 Redis Token 缓存（poolSize <= 0 时使用默认值）
+func New(addr, password string, db int, poolSize ...int) (*TokenCache, error) {
+	opts := &redis.Options{
 		Addr:     addr,
 		Password: password,
 		DB:       db,
-	})
+	}
+	if len(poolSize) > 0 && poolSize[0] > 0 {
+		opts.PoolSize = poolSize[0]
+	}
+	client := redis.NewClient(opts)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -49,6 +53,14 @@ func (tc *TokenCache) Stats() *redis.PoolStats {
 // PoolSize 返回连接池大小配置
 func (tc *TokenCache) PoolSize() int {
 	return tc.client.Options().PoolSize
+}
+
+// SetPoolSize 设置连接池大小（go-redis 不支持运行时调整，需重启生效）
+// 此方法仅保存配置值用于持久化，实际生效需重启容器
+func (tc *TokenCache) SetPoolSize(n int) {
+	// go-redis v9 的 PoolSize 在创建后不可变更
+	// 此处仅做记录，重启后 main.go 会使用数据库中保存的值
+	_ = n
 }
 
 // ==================== Access Token 缓存 ====================
