@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react'
 import { api } from '../api'
 import PageHeader from '../components/PageHeader'
 import StateShell from '../components/StateShell'
+import ToastNotice from '../components/ToastNotice'
 import { useDataLoader } from '../hooks/useDataLoader'
 import { useConfirmDialog } from '../hooks/useConfirmDialog'
 import { useToast } from '../hooks/useToast'
@@ -343,16 +344,7 @@ export default function Settings() {
           </CardContent>
         </Card>
 
-        {toast ? (
-          <div
-            className={`fixed right-6 bottom-6 z-[2000] px-4 py-3 rounded-2xl text-white text-sm font-bold shadow-lg ${
-              toast.type === 'error' ? 'bg-destructive' : 'bg-[hsl(var(--success))]'
-            }`}
-            style={{ animation: 'toast-slide-up 0.22s ease' }}
-          >
-            {toast.msg}
-          </div>
-        ) : null}
+        <ToastNotice toast={toast} />
         {confirmDialog}
       </>
     </StateShell>

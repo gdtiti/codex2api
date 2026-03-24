@@ -6,6 +6,7 @@ import PageHeader from '../components/PageHeader'
 import Pagination from '../components/Pagination'
 import StateShell from '../components/StateShell'
 import StatusBadge from '../components/StatusBadge'
+import ToastNotice from '../components/ToastNotice'
 import { useDataLoader } from '../hooks/useDataLoader'
 import { useConfirmDialog } from '../hooks/useConfirmDialog'
 import { useToast } from '../hooks/useToast'
@@ -469,16 +470,7 @@ export default function Accounts() {
 
         {confirmDialog}
 
-        {toast ? (
-          <div
-            className={`fixed right-6 bottom-6 z-[2000] px-4 py-3 rounded-2xl text-white text-sm font-bold shadow-lg ${
-              toast.type === 'error' ? 'bg-destructive' : 'bg-[hsl(var(--success))]'
-            }`}
-            style={{ animation: 'toast-slide-up 0.22s ease' }}
-          >
-            {toast.msg}
-          </div>
-        ) : null}
+        <ToastNotice toast={toast} />
       </>
     </StateShell>
   )
@@ -570,15 +562,9 @@ function TestConnectionModal({
 
         const decoder = new TextDecoder()
         let buffer = ''
+        let receivedTerminalEvent = false
 
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-
-          buffer += decoder.decode(value, { stream: true })
-          const lines = buffer.split('\n')
-          buffer = lines.pop() || ''
-
+        const processEventLines = (lines: string[]) => {
           for (const line of lines) {
             const trimmed = line.trim()
             if (!trimmed.startsWith('data: ')) continue
@@ -597,10 +583,12 @@ function TestConnectionModal({
                   }
                   break
                 case 'test_complete':
+                  receivedTerminalEvent = true
                   setStatus(event.success ? 'success' : 'error')
                   markSettled()
                   break
                 case 'error':
+                  receivedTerminalEvent = true
                   setStatus('error')
                   setErrorMsg(event.error || '未知错误')
                   markSettled()
@@ -608,6 +596,29 @@ function TestConnectionModal({
               }
             } catch { /* ignore non-JSON lines */ }
           }
+        }
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) {
+            buffer += decoder.decode()
+            break
+          }
+
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n')
+          buffer = lines.pop() || ''
+          processEventLines(lines)
+        }
+
+        if (buffer.trim()) {
+          processEventLines([buffer])
+        }
+
+        if (!receivedTerminalEvent) {
+          setStatus('error')
+          setErrorMsg('连接已结束，但未收到完整的结束事件')
+          markSettled()
         }
       } catch (err: unknown) {
         if (err instanceof DOMException && err.name === 'AbortError') return
