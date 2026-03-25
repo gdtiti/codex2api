@@ -5,12 +5,14 @@
 # ============================================================
 FROM node:20-alpine AS frontend-builder
 
+ARG BUILD_VERSION=dev
+
 WORKDIR /frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --no-audit --no-fund
 COPY frontend/ .
-RUN npm run build
+RUN VITE_APP_VERSION=${BUILD_VERSION} npm run build
 
 # ============================================================
 # Stage 2: 构建 Go 后端 (嵌入前端静态文件)

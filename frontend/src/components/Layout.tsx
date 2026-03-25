@@ -46,7 +46,7 @@ export default function Layout({ children }: PropsWithChildren) {
                     CodexProxy
                   </h1>
                   <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[11px] font-bold w-fit">
-                    v2.0
+                    {__APP_VERSION__}
                   </span>
                 </div>
               </div>
